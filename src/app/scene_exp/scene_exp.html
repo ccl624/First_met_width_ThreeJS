@@ -7,6 +7,8 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>场景Scene</title>
     <script src="../../libs/three.js"></script>
+    <script src="../../libs/stats.js"></script>
+    <script src="../../libs/dat.gui.js"></script>
     <style>
         html,
         body {
@@ -19,24 +21,64 @@
 </head>
 
 <body>
+    <div id="Stats-output"></div>
     <div id="displayPlatform"></div>
 </body>
 <script>
     function Platform(params) {
+        this.stats = this.initStats();
+
         this.scene = new THREE.Scene();
+
+        this.fogColor = 0xFFFFFF;
+
+        this.fogNear = 0.15;
+
+        this.fogFar = 100;
+
+        this.controls = null;
+
         // 为了显示出效果需要添加相机和渲染器
         this.camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.renderer = new THREE.WebGLRenderer();
     }
 
     Platform.prototype.init = function () {
-        var axisHelper = new THREE.AxesHelper();
+        var axisHelper = new THREE.AxesHelper(10);
         this.scene.add(axisHelper);
+
         this.createPlane();
+
         this.camera.position.set(-30, 40, -30);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+        
+        this.controls = this.addControls();
+
+        this.scene.fog = new THREE.Fog(this.fogColor, this.controls.fogNear, this.controls.fogFar);
+        this.renderer.setClearColor(new THREE.Color('#eee'));
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('displayPlatform').appendChild(this.renderer.domElement);
+        this.renderer.render(this.scene, this.camera);
+
+        this.render();
+    }
+
+    Platform.prototype.addControls = function (params) {
+        var controls = new function () {
+            this.fogNear = 0.02;
+            this.fogFar = 100;
+        };
+        var gui = new dat.GUI();
+        gui.add(controls, 'fogNear', 0, 100);
+        gui.add(controls, 'fogFar', 0, 1000);
+
+        return controls;
+    }
+
+    Platform.prototype.render = function () {
+        this.stats.update();
+        this.scene.fog = new THREE.Fog(this.fogColor, this.controls.fogNear, this.controls.fogFar);
+        requestAnimationFrame(this.render.bind(this));
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -50,8 +92,21 @@
         this.scene.add(planeMesh);
     }
 
+    Platform.prototype.initStats = function () {
+        var stats = new Stats();
+        stats.setMode(0);
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.left = '0px';
+        stats.domElement.style.top = '0px';
+        document.getElementById("Stats-output").appendChild(stats.domElement);
+        return stats;
+    }
+
     var platform = new Platform();
-    platform.init();
+
+    window.onload = function () {
+        platform.init();
+    }
 </script>
 
 </html>
